@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AGRA Restaurant — Kitchen Stock</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0f11;--bg2:#16181c;--bg3:#1e2026;--border:#2a2d35;
+  --text:#f0f0f0;--text2:#8a8f9e;--text3:#555a68;
+  --red:#e24b4a;--amber:#ef9f27;--green:#3db87a;--blue:#4a9eff;
+  --red-bg:rgba(226,75,74,.12);--amber-bg:rgba(239,159,39,.12);--green-bg:rgba(61,184,122,.12);--blue-bg:rgba(74,158,255,.12);
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;min-height:100vh}
+.header{padding:2rem 2rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.header-left h1{font-size:22px;font-weight:600;letter-spacing:-.02em}
+.header-left p{font-size:12px;color:var(--text2);margin-top:3px;font-family:'DM Mono',monospace}
+.header-right{display:flex;align-items:center;gap:10px}
+.last-updated{font-size:11px;color:var(--text3);font-family:'DM Mono',monospace;background:var(--bg2);padding:6px 14px;border-radius:6px;border:1px solid var(--border)}
+.refresh-btn{font-size:11px;color:var(--blue);font-family:'DM Mono',monospace;background:var(--blue-bg);padding:6px 14px;border-radius:6px;border:1px solid var(--blue);cursor:pointer;transition:opacity .2s}
+.refresh-btn:hover{opacity:.75}
+.main{padding:1.5rem 2rem;max-width:1400px}
+.loading{display:flex;align-items:center;justify-content:center;height:300px;flex-direction:column;gap:12px;color:var(--text2);font-family:'DM Mono',monospace;font-size:13px}
+.spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--blue);border-radius:50%;animation:spin .7s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error-msg{background:var(--red-bg);border:1px solid var(--red);border-radius:8px;padding:1rem 1.25rem;color:var(--red);font-size:13px;margin-bottom:1rem;display:none}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.5rem}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1rem 1.25rem}
+.kpi-lbl{font-size:11px;color:var(--text3);text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace;margin-bottom:6px}
+.kpi-val{font-size:28px;font-weight:600;letter-spacing:-.03em}
+.kpi-val.red{color:var(--red)}.kpi-val.amber{color:var(--amber)}.kpi-val.green{color:var(--green)}.kpi-val.blue{color:var(--blue)}
+.cats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:14px}
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;padding:1.25rem}
+.card-title{font-size:13px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.08em;font-family:'DM Mono',monospace;margin-bottom:1rem}
+.cat-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.cat-item:last-child{border-bottom:none}
+.cat-name{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+.cat-stock{flex:0 0 28px;text-align:right;font-weight:600;font-family:'DM Mono',monospace;font-size:12px}
+.cat-bar-wrap{flex:0 0 50px;background:var(--bg3);border-radius:3px;height:5px;overflow:hidden}
+.cat-bar{height:100%;border-radius:3px}
+.badge{display:inline-block;font-size:10px;padding:2px 7px;border-radius:4px;font-weight:600;font-family:'DM Mono',monospace;letter-spacing:.04em}
+.b-empty{background:var(--red-bg);color:var(--red)}.b-low{background:var(--amber-bg);color:var(--amber)}.b-ok{background:var(--green-bg);color:var(--green)}
+.full{margin-bottom:14px}
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:1rem;align-items:center}
+input[type=text]{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 12px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none;flex:1;min-width:160px}
+input[type=text]:focus{border-color:#4a5568}
+select{background:var(--bg3);border:1px solid var(--border);color:var(--text);border-radius:7px;padding:7px 12px;font-size:12px;font-family:'DM Sans',sans-serif;outline:none;cursor:pointer}
+.filter-btns{display:flex;gap:4px;flex-wrap:wrap}
+.fbtn{font-size:11px;padding:5px 12px;border-radius:20px;border:1px solid var(--border);background:transparent;cursor:pointer;color:var(--text2);font-family:'DM Sans',sans-serif;transition:all .15s}
+.fbtn.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue)}
+.fbtn.f-empty.active{background:var(--red-bg);border-color:var(--red);color:var(--red)}
+.fbtn.f-low.active{background:var(--amber-bg);border-color:var(--amber);color:var(--amber)}
+.fbtn.f-ok.active{background:var(--green-bg);border-color:var(--green);color:var(--green)}
+table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:500;color:var(--text3);padding:8px 10px;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;letter-spacing:.04em;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--border);color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg3)}
+.bar-wrap{background:var(--bg3);border-radius:3px;height:5px;width:100%;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px}
+.sort-btn{cursor:pointer;user-select:none}
+.sort-btn:hover{color:var(--text)}
+#no-results{text-align:center;padding:2.5rem;color:var(--text3);font-size:13px;display:none}
+#dashboard{display:none}
+@media(max-width:700px){.cats-grid{grid-template-columns:1fr}.main{padding:1rem}}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="header-left">
+    <h1>AGRA Restaurant — Kitchen Stock</h1>
+    <p id="subtitle">Φόρτωση δεδομένων...</p>
+  </div>
+  <div class="header-right">
+    <div class="last-updated" id="last-updated">—</div>
+    <button class="refresh-btn" onclick="loadData()">↻ Ανανέωση</button>
+  </div>
+</div>
+
+<div class="main">
+  <div class="error-msg" id="error-msg"></div>
+
+  <div class="loading" id="loading">
+    <div class="spinner"></div>
+    <span>Φόρτωση από Google Sheets...</span>
+  </div>
+
+  <div id="dashboard">
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-lbl">Σύνολο ειδών</div><div class="kpi-val blue" id="k-total">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">Εξαντλήθηκαν</div><div class="kpi-val red" id="k-empty">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">Χαμηλό stock</div><div class="kpi-val amber" id="k-low">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">Επαρκές</div><div class="kpi-val green" id="k-ok">—</div></div>
+      <div class="kpi"><div class="kpi-lbl">% Σε επάρκεια</div><div class="kpi-val blue" id="k-pct">—</div></div>
+    </div>
+
+    <div class="cats-grid" id="cats-grid"></div>
+
+    <div class="card full">
+      <div class="card-title">Κρίσιμα είδη — Χρειάζονται παραγγελία</div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead><tr><th style="width:32%">Προϊόν</th><th style="width:16%">Κατηγορία</th><th style="width:12%">Μονάδα</th><th style="width:10%;text-align:right">Stock</th><th style="width:8%;text-align:right">Min</th><th style="width:14%">Επίπεδο</th><th style="width:8%;text-align:center">Alert</th></tr></thead>
+        <tbody id="critBody"></tbody>
+      </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Πλήρης λίστα αποθεμάτων</div>
+      <div class="controls">
+        <input type="text" id="search" placeholder="Αναζήτηση προϊόντος...">
+        <div class="filter-btns">
+          <button class="fbtn active" onclick="setFilter('all',this)">Όλα</button>
+          <button class="fbtn f-empty" onclick="setFilter('empty',this)">Εξαντλήθηκε</button>
+          <button class="fbtn f-low" onclick="setFilter('low',this)">Χαμηλό</button>
+          <button class="fbtn f-ok" onclick="setFilter('ok',this)">Επαρκές</button>
+        </div>
+        <select id="catFilter" onchange="renderTable()">
+          <option value="">Όλες οι κατηγορίες</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:28%" class="sort-btn" onclick="sortBy('name')">Προϊόν <span id="s-name"></span></th>
+            <th style="width:16%">Κατηγορία</th>
+            <th style="width:12%">Μονάδα</th>
+            <th style="width:10%;text-align:right" class="sort-btn" onclick="sortBy('stock')">Απόθεμα <span id="s-stock"></span></th>
+            <th style="width:8%;text-align:right">Min</th>
+            <th style="width:16%">Stock bar</th>
+            <th style="width:10%;text-align:center" class="sort-btn" onclick="sortBy('status')">Κατάσταση <span id="s-status"></span></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div id="no-results">Δεν βρέθηκαν αποτελέσματα</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const SHEET_ID = '100B21l8_LnxV8O9LyqpxdGopfWqGxTJvQ8QNcChyLQw';
+const GID = '1438113203';
+const URL = `https://docs.google.com/spreadsheets/d/${SHEET_ID}/gviz/tq?tqx=out:csv&gid=${GID}`;
+
+let RAW = [];
+let currentFilter='all', sortField='status', sortDir=1;
+
+async function loadData() {
+  document.getElementById('loading').style.display='flex';
+  document.getElementById('dashboard').style.display='none';
+  document.getElementById('error-msg').style.display='none';
+
+  try {
+    const res = await fetch(URL + '&t=' + Date.now());
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    const rows = parseCSV(text);
+    RAW = processRows(rows);
+    renderAll();
+    const now = new Date();
+    document.getElementById('last-updated').textContent = 'Ενημέρωση: ' + now.toLocaleTimeString('el-GR', {hour:'2-digit',minute:'2-digit'});
+    document.getElementById('subtitle').textContent = 'Live από Google Sheets · ' + now.toLocaleDateString('el-GR');
+    document.getElementById('loading').style.display='none';
+    document.getElementById('dashboard').style.display='block';
+  } catch(e) {
+    document.getElementById('loading').style.display='none';
+    const err = document.getElementById('error-msg');
+    err.style.display='block';
+    err.textContent = '⚠ Δεν ήταν δυνατή η φόρτωση δεδομένων. Βεβαιώσου ότι το Google Sheet είναι public (Anyone with the link → Viewer). Σφάλμα: ' + e.message;
+  }
+}
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  return lines.map(line => {
+    const cells = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') { inQ = !inQ; }
+      else if (ch === ',' && !inQ) { cells.push(cur.trim()); cur = ''; }
+      else { cur += ch; }
+    }
+    cells.push(cur.trim());
+    return cells;
+  });
+}
+
+function processRows(rows) {
+  if (rows.length < 2) return [];
+  const header = rows[0].map(h => h.replace(/"/g,'').trim());
+  const idxName = header.indexOf('Προϊόν');
+  const idxCat = header.indexOf('Κατηγορία');
+  const idxStock = header.indexOf('Απόθεμα');
+  const idxMin = header.indexOf('Ελάχιστο');
+  const idxUnit = header.indexOf('Μονάδα');
+
+  const data = [];
+  for (let i = 1; i < rows.length; i++) {
+    const r = rows[i];
+    const name = (r[idxName]||'').replace(/"/g,'').trim();
+    if (!name || name === 'Προϊόν') continue;
+    const stock = parseFloat((r[idxStock]||'0').replace(/"/g,'')) || 0;
+    const min = parseFloat((r[idxMin]||'0').replace(/"/g,'')) || 0;
+    const cat = (r[idxCat]||'').replace(/"/g,'').trim();
+    const unit = idxUnit >= 0 ? (r[idxUnit]||'').replace(/"/g,'').trim() : '';
+    const status = stock === 0 ? 'empty' : min > 0 && stock <= min ? 'low' : 'ok';
+    data.push({name, cat, unit, stock, min, status});
+  }
+  return data;
+}
+
+function renderAll() {
+  const total=RAW.length, empty=RAW.filter(r=>r.status==='empty').length, low=RAW.filter(r=>r.status==='low').length, ok=RAW.filter(r=>r.status==='ok').length;
+  document.getElementById('k-total').textContent=total;
+  document.getElementById('k-empty').textContent=empty;
+  document.getElementById('k-low').textContent=low;
+  document.getElementById('k-ok').textContent=ok;
+  document.getElementById('k-pct').textContent=total>0?Math.round(ok/total*100)+'%':'—';
+
+  const cats=[...new Set(RAW.map(r=>r.cat))].filter(Boolean).sort();
+  const catSel=document.getElementById('catFilter');
+  catSel.innerHTML='<option value="">Όλες οι κατηγορίες</option>';
+  cats.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c;catSel.appendChild(o);});
+
+  // Category cards
+  const grid = document.getElementById('cats-grid');
+  grid.innerHTML = cats.map(cat => {
+    const items = RAW.filter(r => r.cat === cat);
+    const maxS = Math.max(...items.map(w=>w.stock), 1);
+    return `<div class="card"><div class="card-title">${cat}</div>${items.map(w=>{
+      const pct=Math.min(Math.round(w.stock/maxS*100),100);
+      const col=w.status==='empty'?'var(--red)':w.status==='low'?'var(--amber)':'var(--green)';
+      const bdg=w.status==='empty'?'<span class="badge b-empty">0</span>':w.status==='low'?'<span class="badge b-low">!</span>':'';
+      return `<div class="cat-item"><div class="cat-name" title="${w.name}">${w.name}</div>${bdg}<div class="cat-stock" style="color:${col}">${w.stock}</div><div class="cat-bar-wrap"><div class="cat-bar" style="width:${pct}%;background:${col}"></div></div></div>`;
+    }).join('')}</div>`;
+  }).join('');
+
+  renderCrit();
+  renderTable();
+}
+
+function renderCrit() {
+  const crit=RAW.filter(r=>r.status!=='ok').sort((a,b)=>{
+    if(a.status==='empty'&&b.status!=='empty') return -1;
+    if(b.status==='empty'&&a.status!=='empty') return 1;
+    return (a.stock/Math.max(a.min,1))-(b.stock/Math.max(b.min,1));
+  });
+  document.getElementById('critBody').innerHTML=crit.length ? crit.map(r=>{
+    const pct=r.min>0?Math.min(Math.round(r.stock/r.min*100),100):0;
+    const col=r.status==='empty'?'var(--red)':'var(--amber)';
+    return `<tr><td title="${r.name}">${r.name}</td><td>${r.cat}</td><td style="font-size:11px;color:var(--text2)">${r.unit||'—'}</td><td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${r.stock}</td><td style="text-align:right;color:var(--text3);font-family:'DM Mono',monospace">${r.min}</td><td><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div></td><td style="text-align:center"><span class="badge ${r.status==='empty'?'b-empty':'b-low'}">${r.status==='empty'?'ΚΕΝΟ':'ΧΑΜΗΛΟ'}</span></td></tr>`;
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--text3);padding:1.5rem">✓ Όλα τα είδη είναι σε επάρκεια</td></tr>';
+}
+
+function setFilter(f,el){currentFilter=f;document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));el.classList.add('active');renderTable();}
+function sortBy(field){if(sortField===field)sortDir*=-1;else{sortField=field;sortDir=1;}document.querySelectorAll('[id^="s-"]').forEach(e=>e.textContent='');document.getElementById('s-'+field).textContent=sortDir===1?' ↑':' ↓';renderTable();}
+
+function renderTable(){
+  const q=document.getElementById('search').value.toLowerCase();
+  const cf=document.getElementById('catFilter').value;
+  let data=RAW.filter(r=>{
+    if(currentFilter!=='all'&&r.status!==currentFilter) return false;
+    if(cf&&r.cat!==cf) return false;
+    if(q&&!r.name.toLowerCase().includes(q)&&!r.cat.toLowerCase().includes(q)&&!r.unit.toLowerCase().includes(q)) return false;
+    return true;
+  });
+  data.sort((a,b)=>{
+    let va=a[sortField]||'',vb=b[sortField]||'';
+    if(sortField==='status'){const o={empty:0,low:1,ok:2};va=o[a.status];vb=o[b.status];}
+    if(va<vb) return -sortDir; if(va>vb) return sortDir; return 0;
+  });
+  const tbody=document.getElementById('tableBody'),noRes=document.getElementById('no-results');
+  if(!data.length){tbody.innerHTML='';noRes.style.display='block';return;}
+  noRes.style.display='none';
+  tbody.innerHTML=data.map(r=>{
+    const pct=r.min>0?Math.min(Math.round(r.stock/r.min*100),100):100;
+    const col=r.status==='empty'?'var(--red)':r.status==='low'?'var(--amber)':'var(--green)';
+    return `<tr><td title="${r.name}" style="font-weight:500">${r.name}</td><td style="color:var(--text2);font-size:12px">${r.cat}</td><td style="color:var(--text3);font-size:11px">${r.unit||'—'}</td><td style="text-align:right;font-weight:600;font-family:'DM Mono',monospace">${r.stock}</td><td style="text-align:right;color:var(--text3);font-family:'DM Mono',monospace">${r.min}</td><td><div class="bar-wrap"><div class="bar-fill" style="width:${pct}%;background:${col}"></div></div></td><td style="text-align:center"><span class="badge ${r.status==='empty'?'b-empty':r.status==='low'?'b-low':'b-ok'}">${r.status==='empty'?'ΚΕΝΟ':r.status==='low'?'ΧΑΜΗΛΟ':'OK'}</span></td></tr>`;
+  }).join('');
+}
+
+document.getElementById('search').addEventListener('input',renderTable);
+loadData();
+</script>
+</body>
+</html>
